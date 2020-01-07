@@ -232,10 +232,10 @@ namespace RightKeyboard {
 			IntPtr hkl = new IntPtr(unchecked((int)((uint)layout << 16 | (uint)layout)));
 
 			bool ok = API.SystemParametersInfo(API.SPI_SETDEFAULTINPUTLANG, 0, new IntPtr[] { hkl }, API.SPIF_SENDCHANGE);
-			Debug.Assert(ok);
-			if(!ok) {
-				throw Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error());
-			}
+			//Debug.Assert(ok);
+			//if(!ok) {
+			//	throw Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error());
+			//}
 		}
 
 		private void clearToolStripMenuItem_Click(object sender, EventArgs e)
