@@ -20,3 +20,4 @@ Make sure all your keyboard layouts are set on different languages/locales on wi
 3. Paste RightKeyboard.exe there
 4. Open it
 5. Press a key, chose a locale.
+6. Everytime you login, it will start changing the layout automatically.
