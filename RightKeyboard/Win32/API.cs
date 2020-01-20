@@ -159,6 +159,12 @@ namespace RightKeyboard.Win32 {
 		private static extern uint GetKeyboardLayoutList(int nBuff, IntPtr[] lpList);
 
 		[DllImport("user32.dll")]
+		private static extern IntPtr GetForegroundWindow();
+
+		[DllImport("user32.dll")]
+		private static extern IntPtr GetWindowThreadProcessId(IntPtr hWnd, uint lpdwProcessId);
+
+		[DllImport("user32.dll")]
 		private static extern IntPtr GetKeyboardLayout(uint thread);
 
 		public static IntPtr[] GetKeyboardLayoutList() {
@@ -173,7 +179,8 @@ namespace RightKeyboard.Win32 {
 
 		public static IntPtr GetKeyboardLayout()
 		{
-			return GetKeyboardLayout(0);
+			IntPtr WinThreadProcId = GetWindowThreadProcessId(GetForegroundWindow(),0);
+			return GetKeyboardLayout((ushort)WinThreadProcId);
 		}
 
 		public const int SPI_SETDEFAULTINPUTLANG = 90;

@@ -14,7 +14,6 @@ using System.Globalization;
 namespace RightKeyboard {
 	public partial class MainForm : Form {
 		private bool selectingLayout = false;
-		private ushort currentLayout;
 		private LayoutSelectionDialog layoutSelectionDialog = new LayoutSelectionDialog();
 
 		private Dictionary<IntPtr, ushort> languageMappings = new Dictionary<IntPtr, ushort>();
@@ -198,16 +197,17 @@ namespace RightKeyboard {
 
 		private void ValidateCurrentDevice(IntPtr hCurrentDevice) {
 			ushort layout;
-			if(!languageMappings.TryGetValue(hCurrentDevice, out layout)) {
+			if (!languageMappings.TryGetValue(hCurrentDevice, out layout)) {
 				selectingLayout = true;
 				layoutSelectionDialog.ShowDialog();
 				selectingLayout = false;
 				layout = layoutSelectionDialog.Layout.Identifier;
 				languageMappings.Add(hCurrentDevice, layout);
 			}
-			
+
 			ushort currentSysLayout = (ushort)API.GetKeyboardLayout().ToInt32();
-			if(currentLayout != layout)
+
+			if (currentSysLayout != layout)
 			{
 				SetCurrentLayout(layout);
 				SetDefaultLayout(layout);
@@ -215,11 +215,8 @@ namespace RightKeyboard {
 		}
 
 		private void SetCurrentLayout(ushort layout) {
-			if(layout != currentLayout && layout != 0) {
-				currentLayout = layout;
 				uint recipients = API.BSM_APPLICATIONS;
 				API.BroadcastSystemMessage(API.BSF_POSTMESSAGE, ref recipients, API.WM_INPUTLANGCHANGEREQUEST, IntPtr.Zero, new IntPtr(layout));
-			}
 		}
 
 		private void SetDefaultLayout(ushort layout) {
