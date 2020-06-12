@@ -42,6 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration.cs" />
+    <Compile Include="KeyboardDevicesCollection.cs" />
+    <Compile Include="KeyboardDevice.cs" />
     <Compile Include="Layout.cs" />
     <Compile Include="LayoutSelectionDialog.cs">
       <SubType>Form</SubType>

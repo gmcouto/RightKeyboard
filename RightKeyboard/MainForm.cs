@@ -1,25 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
 using RightKeyboard.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO;
-using System.Globalization;
-using System.Linq;
 
 namespace RightKeyboard {
 	public partial class MainForm : Form {
 		private bool selectingLayout = false;
 		private LayoutSelectionDialog layoutSelectionDialog = new LayoutSelectionDialog();
 
-		private Dictionary<IntPtr, Layout> languageMappings = new Dictionary<IntPtr, Layout>();
+		private Configuration configuration;
 
-		private Dictionary<string, IntPtr> devicesByName = new Dictionary<string, IntPtr>();
+		private KeyboardDevicesCollection devices = new KeyboardDevicesCollection();
 
 		public MainForm() {
 			InitializeComponent();
@@ -33,7 +27,6 @@ namespace RightKeyboard {
 
 			WindowState = FormWindowState.Minimized;
 
-			LoadDeviceList();
 			LoadConfiguration();
 		}
 
@@ -44,14 +37,7 @@ namespace RightKeyboard {
 
 		private void SaveConfiguration() {
 			try {
-				string configFilePath = GetConfigFilePath();
-				using(TextWriter output = File.CreateText(configFilePath)) {
-					foreach(KeyValuePair<string, IntPtr> entry in devicesByName) {
-						if(languageMappings.TryGetValue(entry.Value, out var layout)) {
-							output.WriteLine("{0}={1:X8}", entry.Key, layout.Identifier.ToInt32());
-						}
-					}
-				}
+				configuration.Save(devices);
 			}
 			catch(Exception err) {
 				MessageBox.Show("Could not save the configuration. Reason: " + err.Message);
@@ -60,27 +46,7 @@ namespace RightKeyboard {
 
 		private void LoadConfiguration() {
 			try {
-				string configFilePath = GetConfigFilePath();
-				if(File.Exists(configFilePath)) {
-					using(TextReader input = File.OpenText(configFilePath)) {
-
-						var layouts = RightKeyboard.Layout.EnumerateLayouts().ToDictionary(k => k.Identifier, v => v);
-
-						string line;
-						while((line = input.ReadLine()) != null) {
-							string[] parts = line.Split('=');
-							Debug.Assert(parts.Length == 2);
-
-							string deviceName = parts[0];
-							var layoutId = new IntPtr(int.Parse(parts[1], NumberStyles.HexNumber));
-
-							if(devicesByName.TryGetValue(deviceName, out var deviceHandle)
-								&& layouts.TryGetValue(layoutId, out var layout)) {
-								languageMappings.Add(deviceHandle, layout);
-							}
-						}
-					}
-				}
+				configuration = Configuration.LoadConfiguration(devices);
 			}
 			catch(Exception err) {
 				MessageBox.Show("Could not load the configuration. Reason: " + err.Message);
@@ -94,16 +60,6 @@ namespace RightKeyboard {
 			}
 
 			return Path.Combine(configFileDir, "config.txt");
-		}
-
-		private void LoadDeviceList() {
-			foreach(API.RAWINPUTDEVICELIST rawInputDevice in API.GetRawInputDeviceList()) {
-				if(rawInputDevice.dwType == API.RIM_TYPEKEYBOARD) {
-					IntPtr deviceHandle = rawInputDevice.hDevice;
-					string deviceName = API.GetRawInputDeviceName(deviceHandle);
-					devicesByName.Add(deviceName, deviceHandle);
-				}
-			}
 		}
 
 		protected override void OnLoad(EventArgs e) {
@@ -199,20 +155,20 @@ namespace RightKeyboard {
 		}
 
 		private void ValidateCurrentDevice(IntPtr hCurrentDevice) {
-			if (!languageMappings.TryGetValue(hCurrentDevice, out var layout)) {
+			if (!configuration.LanguageMappings.TryGetValue(hCurrentDevice, out var layout)) {
 				selectingLayout = true;
 				layoutSelectionDialog.ShowDialog();
-				selectingLayout = false;
 				layout = layoutSelectionDialog.Layout;
-				languageMappings.Add(hCurrentDevice, layout);
+				configuration.LanguageMappings.Add(hCurrentDevice, layout);
+				selectingLayout = false;
 			}
 
 			var currentSysLayout = API.GetKeyboardLayout();
-
-			if (currentSysLayout != layout.Identifier)
+			var desiredLayout = layout.Identifier;
+			if (currentSysLayout != desiredLayout)
 			{
-				SetCurrentLayout(layout.Identifier);
-				SetDefaultLayout(layout.Identifier);
+				SetCurrentLayout(desiredLayout);
+				SetDefaultLayout(desiredLayout);
 			}
 		}
 
@@ -227,7 +183,7 @@ namespace RightKeyboard {
 
 		private void clearToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			languageMappings.Clear();
+			configuration.LanguageMappings.Clear();
 		}
 
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e) {

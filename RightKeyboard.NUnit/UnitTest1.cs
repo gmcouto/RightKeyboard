@@ -3,6 +3,7 @@ using RightKeyboard.Win32;
 
 namespace RightKeyboard.NUnit
 {
+    [TestFixture]
     public class Tests
     {
         [Test]
