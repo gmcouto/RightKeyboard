@@ -2,6 +2,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
+using System.Linq;
+using System.Globalization;
 
 namespace RightKeyboard.Win32 {
 	/// <summary>
@@ -156,7 +158,13 @@ namespace RightKeyboard.Win32 {
 		public static extern int BroadcastSystemMessage(uint dwFlags, ref uint lpdwRecipients, uint uiMessage, IntPtr wParam, IntPtr lParam);
 
 		[DllImport("user32.dll")]
+		private static extern IntPtr ActivateKeyboardLayout(IntPtr hkl, uint flags);
+
+		[DllImport("user32.dll")]
 		private static extern uint GetKeyboardLayoutList(int nBuff, IntPtr[] lpList);
+
+		[DllImport("user32.dll")]
+		private static extern bool GetKeyboardLayoutNameW([MarshalAs(UnmanagedType.LPWStr)]StringBuilder buffer);
 
 		[DllImport("user32.dll")]
 		private static extern IntPtr GetForegroundWindow();
@@ -175,6 +183,43 @@ namespace RightKeyboard.Win32 {
 			int realCount = (int)GetKeyboardLayoutList(count, localeHandles);
 			Debug.Assert(realCount == count);
 			return localeHandles;
+		}
+
+		public static string GetKeyboardLayoutName(IntPtr keyboardLayout)
+		{
+			return $"{GetLanguageName(keyboardLayout)} / {GetKeyboardName(keyboardLayout)}";
+		}
+
+		private static string GetLanguageName(IntPtr keyboardLayout)
+		{
+			var langId = (ushort)keyboardLayout.ToInt32();
+
+			var langName = CultureInfo.GetCultureInfo(langId).DisplayName;
+
+			return langName;
+		}
+
+		private static string GetKeyboardName(IntPtr keyboardLayout)
+		{
+			var currentKL = GetKeyboardLayout();
+			if (currentKL != keyboardLayout)
+			{
+				ActivateKeyboardLayout(keyboardLayout, 0);
+			}
+
+			var buffer = new StringBuilder();
+			GetKeyboardLayoutNameW(buffer);
+
+			if (currentKL != keyboardLayout)
+			{
+				ActivateKeyboardLayout(currentKL, 0);
+			}
+
+			var nameId = buffer.ToString().ToLowerInvariant();
+			var regKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey($@"SYSTEM\ControlSet001\Control\Keyboard Layouts\{nameId}");
+			var name = regKey.GetValue("Layout Text");
+
+			return name as string;
 		}
 
 		public static IntPtr GetKeyboardLayout()

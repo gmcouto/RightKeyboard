@@ -1,11 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
-using RightKeyboard.Win32;
 
 namespace RightKeyboard {
 	public partial class LayoutSelectionDialog : Form {
@@ -19,15 +14,8 @@ namespace RightKeyboard {
 			lbLayouts.Items.Clear();
 			recentLayoutsCount = 0;
 
-			IntPtr[] installedLayouts = API.GetKeyboardLayoutList();
-
-			foreach(Layout layout in RightKeyboard.Layout.GetLayouts()) {
-				foreach(IntPtr installedLayout in installedLayouts) {
-					ushort languageId = unchecked((ushort)installedLayout.ToInt32());
-					if(layout.Identifier == languageId) {
-						lbLayouts.Items.Add(layout);
-					}
-				}
+			foreach(Layout layout in Layout.EnumerateLayouts()) {
+				lbLayouts.Items.Add(layout);
 			}
 
 			lbLayouts.SelectedIndex = 0;
