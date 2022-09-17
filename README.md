@@ -1,3 +1,5 @@
+# This project is not maintained anymore.
+
 # RightKeyboard
 Automatically switch keyboard layout on different physical keyboard key press.
 
